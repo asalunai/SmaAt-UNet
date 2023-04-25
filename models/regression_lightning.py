@@ -6,7 +6,22 @@ from torch.utils.data.sampler import SubsetRandomSampler
 from utils import dataset_precip
 import argparse
 import numpy as np
+from sklearn.decomposition import PCA
 
+class TransformPCA(object):
+    """Transform PCA."""
+
+    def __call__(self, sample):
+    
+        sample = sample.reshape(12, 82944)
+        pca = PCA(6)
+        images_pca = pca.fit(sample)
+        eigen_images = images_pca.components_.reshape(6, 288, 288)
+	#for i in images_pca.components_:
+	#    # return each of the components, and reshape them to 288x288
+	#    img = i.reshape(288, 288)
+
+        return eigen_images
 
 class UNet_base(pl.LightningModule):
     @staticmethod
@@ -115,8 +130,8 @@ class Precip_regression_base(UNet_base):
         # train_transform = transforms.Compose([
         #     transforms.RandomHorizontalFlip()]
         # )
-        train_transform = None
-        valid_transform = None
+        train_transform = TransformPCA()
+        valid_transform = TransformPCA()
         if self.hparams.use_oversampled_dataset:
             self.train_dataset = dataset_precip.precipitation_maps_oversampled_h5(
                 in_file=self.hparams.dataset_folder, num_input_images=self.hparams.num_input_images,
